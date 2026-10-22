@@ -3,141 +3,191 @@ package com.altron.app;
 import android.app.Activity;
 import android.os.Bundle;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
-import android.widget.EditText;
+import android.widget.Toast;
 import android.speech.tts.TextToSpeech;
-import android.content.Intent;
-import android.speech.RecognizerIntent;
+
+import org.json.JSONObject;
+import org.json.JSONArray;
+
+import java.net.URL;
+import java.net.HttpURLConnection;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
 
-LinearLayout layout;
-TextView status, result;
-EditText input;
-TextToSpeech tts;
+    LinearLayout root;
+    TextView status, priceText, signalText, detailText;
+    Spinner pairSpinner;
+    TextToSpeech tts;
 
-int cyan = Color.rgb(0, 220, 255);
+    final int CYAN = Color.rgb(0, 220, 255);
+    final int BG = Color.rgb(3, 8, 15);
+    final int PANEL = Color.rgb(12, 22, 35);
 
-@Override
-public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+    // OANDA demo API tokenini kodga yozmang.
+    // Tokenni xavfsiz server orqali ulash kerak.
 
-    getWindow().setStatusBarColor(Color.rgb(3, 8, 15));
-    getWindow().setNavigationBarColor(Color.BLACK);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    layout = new LinearLayout(this);
-    layout.setOrientation(LinearLayout.VERTICAL);
-    layout.setGravity(Gravity.CENTER);
-    layout.setPadding(24, 30, 24, 24);
-    layout.setBackgroundColor(Color.rgb(3, 8, 15));
-
-    TextView title = new TextView(this);
-    title.setText("A L T R O N");
-    title.setTextSize(34);
-    title.setTextColor(cyan);
-    title.setGravity(Gravity.CENTER);
-    layout.addView(title);
-
-    TextView orb = new TextView(this);
-    orb.setText("◉");
-    orb.setTextSize(100);
-    orb.setTextColor(cyan);
-    orb.setGravity(Gravity.CENTER);
-    layout.addView(orb);
-
-    status = new TextView(this);
-    status.setText("● ALTRON SYSTEM READY");
-    status.setTextColor(Color.GREEN);
-    status.setTextSize(16);
-    status.setGravity(Gravity.CENTER);
-    layout.addView(status);
-
-    result = new TextView(this);
-    result.setText("Assalomu alaykum! Men ALTRON AI.");
-    result.setTextColor(Color.WHITE);
-    result.setTextSize(18);
-    result.setGravity(Gravity.CENTER);
-    result.setPadding(0, 20, 0, 20);
-    layout.addView(result);
-
-    input = new EditText(this);
-    input.setSingleLine(false);
-    input.setHint("Savolingizni yozing...");
-    input.setHintTextColor(Color.GRAY);
-    input.setTextColor(Color.WHITE);
-    layout.addView(input);
-
-    Button send = new Button(this);
-    send.setText("AI GA YUBORISH");
-    layout.addView(send);
-
-    Button voice = new Button(this);
-    voice.setText("🎙 OVOZ BILAN GAPIRISH");
-    layout.addView(voice);
-
-    tts = new TextToSpeech(this, code -> {
-        if (code == TextToSpeech.SUCCESS) {
-            int language = tts.setLanguage(new Locale("uz"));
-            if (language == TextToSpeech.LANG_MISSING_DATA ||
-                language == TextToSpeech.LANG_NOT_SUPPORTED) {
-                tts.setLanguage(new Locale("ru"));
+        tts = new TextToSpeech(this, result -> {
+            if (result == TextToSpeech.SUCCESS) {
+                tts.setLanguage(new Locale("uz", "UZ"));
+                tts.setSpeechRate(0.90f);
             }
-        }
-    });
+        });
 
-    send.setOnClickListener(v -> {
-        String question = input.getText().toString().trim();
-        if (question.isEmpty()) {
-            result.setText("Iltimos, savolingizni yozing.");
-        } else {
-            result.setText("Savolingiz: " + question +
-                "\n\nAI ulanishi hali sozlanmagan. Keyingi bosqichda ulaymiz.");
-            status.setText("● ALTRON READY");
-        }
-    });
-
-    voice.setOnClickListener(v -> {
-        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-            RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "uz-UZ");
-
-        try {
-            startActivityForResult(intent, 100);
-        } catch (Exception e) {
-            result.setText("Ovozli kiritish telefoningizda mavjud emas.");
-        }
-    });
-
-    setContentView(layout);
-}
-
-@Override
-protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    super.onActivityResult(requestCode, resultCode, data);
-
-    if (requestCode == 100 && resultCode == RESULT_OK && data != null) {
-        java.util.ArrayList<String> matches =
-            data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-
-        if (matches != null && !matches.isEmpty()) {
-            input.setText(matches.get(0));
-        }
+        buildUI();
     }
-}
 
-@Override
-protected void onDestroy() {
-    if (tts != null) {
-        tts.stop();
-        tts.shutdown();
+    void buildUI() {
+        ScrollView scroll = new ScrollView(this);
+        scroll.setBackgroundColor(BG);
+
+        root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(20, 28, 20, 24);
+        root.setBackgroundColor(BG);
+        scroll.addView(root);
+
+        TextView title = new TextView(this);
+        title.setText("◉ ALTRON");
+        title.setTextColor(CYAN);
+        title.setTextSize(34);
+        title.setGravity(Gravity.CENTER);
+        title.setTypeface(null, Typeface.BOLD);
+        root.addView(title);
+
+        status = addText("AI TRADER  |  DEMO MODE", 14, CYAN);
+        status.setGravity(Gravity.CENTER);
+
+        addText("\nVALYUTA JUFTLIGI", 14, Color.LTGRAY);
+
+        String[] pairs = {
+            "EUR_USD", "GBP_USD", "USD_JPY",
+            "AUD_USD", "USD_CAD", "USD_CHF",
+            "NZD_USD", "EUR_GBP"
+        };
+
+        pairSpinner = new Spinner(this);
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(
+            this,
+            android.R.layout.simple_spinner_dropdown_item,
+            pairs
+        );
+        pairSpinner.setAdapter(adapter);
+        root.addView(pairSpinner);
+
+        priceText = addPanelText("Narx: hali yuklanmagan", 22, Color.WHITE);
+        signalText = addPanelText("SIGNAL: KUTILMOQDA", 24, CYAN);
+        detailText = addPanelText(
+            "OANDA demo ma'lumotlarini ulash uchun himoyalangan API server kerak.",
+            15, Color.LTGRAY
+        );
+
+        Button analyze = makeButton("BOZORNI TAHLIL QILISH");
+        analyze.setOnClickListener(v -> {
+            status.setText("Tahlil qilinmoqda...");
+            fetchPrice();
+        });
+
+        Button speak = makeButton("🔊 OVOZDA O'QISH");
+        speak.setOnClickListener(v -> {
+            String message = signalText.getText().toString()
+                + ". " + detailText.getText().toString();
+            if (tts != null) {
+                tts.speak(message, TextToSpeech.QUEUE_FLUSH, null, "altron");
+            }
+        });
+
+        root.addView(analyze);
+        root.addView(speak);
+
+        addText("\nESLATMA", 16, CYAN);
+        addText(
+            "Bu ilova tahliliy yordamchi. Signallar xato bo'lishi mumkin. " +
+            "Hozircha haqiqiy yoki avtomatik savdo bajarilmaydi.",
+            14, Color.LTGRAY
+        );
+
+        setContentView(scroll);
     }
-    super.onDestroy();
-}
 
+    TextView addText(String text, int size, int color) {
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        t.setPadding(4, 12, 4, 12);
+        root.addView(t);
+        return t;
+    }
+
+    TextView addPanelText(String text, int size, int color) {
+        TextView t = new TextView(this);
+        t.setText(text);
+        t.setTextSize(size);
+        t.setTextColor(color);
+        t.setPadding(16, 18, 16, 18);
+        t.setBackgroundColor(PANEL);
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
+            -1, -2
+        );
+        p.setMargins(0, 10, 0, 10);
+        root.addView(t, p);
+        return t;
+    }
+
+    Button makeButton(String text) {
+        Button b = new Button(this);
+        b.setText(text);
+        b.setTextColor(Color.BLACK);
+        b.setBackgroundTintList(
+            android.content.res.ColorStateList.valueOf(CYAN)
+        );
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(
+            -1, -2
+        );
+        p.setMargins(0, 8, 0, 8);
+        root.addView(b, p);
+        return b;
+    }
+
+    void fetchPrice() {
+        // OANDA tokenini APK ichiga joylashtirmaslik uchun
+        // bu versiya hali API ga ulanmaydi.
+        status.setText("API SERVER KERAK");
+        priceText.setText("Narx: ulanmagan");
+        signalText.setText("SIGNAL: MA'LUMOT YO'Q");
+        detailText.setText(
+            "OANDA demo API ni ulash uchun tokenni himoya qiluvchi " +
+            "server kerak. Hozircha haqiqiy narx olinmayapti."
+        );
+        Toast.makeText(
+            this,
+            "OANDA ulanishi hali sozlanmagan",
+            Toast.LENGTH_LONG
+        ).show();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+        }
+        super.onDestroy();
+    }
 }
