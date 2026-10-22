@@ -1,36 +1,49 @@
 name: Build ALTRON AI
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
+workflow_dispatch:
+push:
+branches:
+- main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+build:
+runs-on: ubuntu-22.04
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+  - name: Set up Java
+    uses: actions/setup-java@v5
+    with:
+      distribution: temurin
+      java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+  - name: Set up Gradle
+    uses: gradle/actions/setup-gradle@v4
+    with:
+      gradle-version: '8.9'
 
-      - name: Build Android APK
-        run: gradle assembleDebug
+  - name: Build APK
+    run: gradle --no-daemon clean assembleDebug
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: ALTRON-APK
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+  - name: Verify APK
+    run: |
+      APK="app/build/outputs/apk/debug/app-debug.apk"
+      if [ ! -f "$APK" ]; then
+        echo "XATO: APK fayli topilmadi!"
+        find app/build/outputs -type f
+        exit 1
+      fi
+      ls -lh "$APK"
+      file "$APK"
+      unzip -t "$APK"
+
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: ALTRON-APK
+      path: app/build/outputs/apk/debug/app-debug.apk
+      if-no-files-found: error
+      compression-level: 0
