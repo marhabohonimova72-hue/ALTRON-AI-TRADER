@@ -1,15 +1,3 @@
-name: Build ALTRON AI
-
-on:
-workflow_dispatch:
-push:
-branches:
-- main
-
-jobs:
-build:
-runs-on: ubuntu-22.04
-
 steps:
   - name: Checkout repository
     uses: actions/checkout@v4
@@ -32,7 +20,7 @@ steps:
     run: |
       APK="app/build/outputs/apk/debug/app-debug.apk"
       if [ ! -f "$APK" ]; then
-        echo "XATO: APK fayli topilmadi!"
+        echo "ERROR: APK file not found"
         find app/build/outputs -type f
         exit 1
       fi
