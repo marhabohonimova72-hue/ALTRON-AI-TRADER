@@ -9,33 +9,48 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
-        getWindow().getDecorView().setBackgroundColor(Color.BLACK);
+    try {
+        getWindow().getDecorView().setSystemUiVisibility(0);
+        getWindow().setStatusBarColor(Color.rgb(3, 8, 15));
+        getWindow().setNavigationBarColor(Color.BLACK);
 
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setGravity(Gravity.CENTER);
         layout.setBackgroundColor(Color.rgb(3, 8, 15));
+        layout.setPadding(24, 24, 24, 24);
 
         TextView title = new TextView(this);
         title.setText("ALTRON AI");
         title.setTextColor(Color.CYAN);
-        title.setTextSize(36);
+        title.setTextSize(34);
         title.setGravity(Gravity.CENTER);
 
         layout.addView(title);
 
-        TextView message = new TextView(this);
-        message.setText("TIZIM ISHLAYAPTI");
-        message.setTextColor(Color.WHITE);
-        message.setTextSize(20);
-        message.setGravity(Gravity.CENTER);
+        TextView status = new TextView(this);
+        status.setText("TIZIM ISHLAYAPTI");
+        status.setTextColor(Color.WHITE);
+        status.setTextSize(20);
+        status.setGravity(Gravity.CENTER);
+        status.setPadding(0, 30, 0, 0);
 
-        layout.addView(message);
+        layout.addView(status);
 
         setContentView(layout);
+
+    } catch (Exception e) {
+        TextView error = new TextView(this);
+        error.setText("ALTRON AI ishga tushmoqda...");
+        error.setTextColor(Color.WHITE);
+        error.setBackgroundColor(Color.BLACK);
+        error.setGravity(Gravity.CENTER);
+        setContentView(error);
     }
+}
+
 }
