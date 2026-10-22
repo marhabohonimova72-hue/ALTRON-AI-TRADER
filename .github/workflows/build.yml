@@ -3,33 +3,39 @@ name: Build ALTRON AI
 on:
 workflow_dispatch:
 push:
-branches: [main]
+branches:
+- main
 
 jobs:
 build:
 runs-on: ubuntu-latest
 
 steps:
-  - name: Checkout
+  - name: Checkout repository
     uses: actions/checkout@v4
 
-  - name: Install Java
+  - name: Set up Java
     uses: actions/setup-java@v4
     with:
       distribution: temurin
       java-version: '17'
 
-  - name: Build APK
+  - name: Set up Gradle
+    uses: gradle/actions/setup-gradle@v4
+
+  - name: Build Android APK
     run: |
       if [ ! -f gradlew ]; then
-        echo "Android project files are missing"
+        echo "XATO: gradlew fayli topilmadi."
         exit 1
       fi
       chmod +x gradlew
       ./gradlew assembleDebug
 
   - name: Upload APK
+    if: success()
     uses: actions/upload-artifact@v4
     with:
       name: ALTRON-APK
       path: app/build/outputs/apk/debug/*.apk
+      if-no-files-found: error
